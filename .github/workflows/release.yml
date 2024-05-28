@@ -50,12 +50,12 @@ jobs:
       - name: Download release assets
         uses: actions/download-artifact@v4
         with:
-          name: smeditor-${{ matrix.os }}-${{ matrix.go-version }}
           path: release/
+          merge-multiple: true
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: release/smeditor
+          files: release/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
