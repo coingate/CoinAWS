@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -e
+
 # Determine the OS
 OS="$(uname -s)"
 case "$OS" in
@@ -26,8 +28,19 @@ tar -xzf smeditor.tar.gz
 # Move the binary to /usr/local/bin
 mv smeditor /usr/local/bin/
 
+# Set the correct ownership and permissions
+chown root:root /usr/local/bin/smeditor
+chmod 755 /usr/local/bin/smeditor
+
 # Clean up
 rm -rf smeditor.tar.gz smeditor
+
+# Refresh the shell environment
+if [ -n "$BASH_VERSION" ]; then
+    source ~/.bashrc
+elif [ -n "$ZSH_VERSION" ]; then
+    source ~/.zshrc
+fi
 
 # Verify installation
 if command -v smeditor > /dev/null; then
