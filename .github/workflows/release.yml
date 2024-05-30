@@ -1,14 +1,10 @@
-name: Release
+name: Build
 
 on:
   push:
     tags:
       - 'v*.*.*'
   workflow_dispatch:
-
-env:
-  GO_VERSIONS: 1.22
-  OS_LIST: ubuntu-latest, macos-latest
 
 
 jobs:
@@ -17,8 +13,8 @@ jobs:
 
     strategy:
       matrix:
-        go-version: [ ${{ env.GO_VERSIONS }} ]
-        os: [ ${{ env.OS_LIST }} ]
+        go-version: [1.22]
+        os: [ubuntu-latest, macos-latest]
 
     steps:
       - name: Check out the repository
@@ -49,26 +45,3 @@ jobs:
           name: smeditor-${{ matrix.os }}-${{ matrix.go-version }}
           path: release/
 
-  release:
-    needs: build
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        go-version: [ $GO_VERSIONS ]
-        os: [ $OS_LIST ]
-
-    steps:
-      - name: Download release assets
-        uses: actions/download-artifact@v4
-        with:
-          path: release/smeditor-${{ matrix.os }}-${{ matrix.go-version }}
-
-      - name: Display structure of downloaded files
-        run: ls -ln release
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: release/smeditor-${{ matrix.os }}-${{ matrix.go-version }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
