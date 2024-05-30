@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"smeditor/config"
 	"smeditor/internal/awsa"
@@ -36,7 +37,7 @@ func main() {
 			Message: "Choose your default text editor:",
 			Options: availableEditors,
 		}
-		err := survey.AskOne(prompt, &selectedEditor)
+		err := survey.AskOne(prompt, &selectedEditor, survey.WithPageSize(10))
 		if err != nil {
 			fmt.Println("Error selecting editor:", err)
 			os.Exit(1)
@@ -63,6 +64,12 @@ func main() {
 	if err != nil {
 		fmt.Println("Error selecting profile:", err)
 		os.Exit(1)
+	}
+
+	// Check and refresh AWS SSO token if necessary
+	err = awsa.CheckAndRefreshToken(profile)
+	if err != nil {
+		log.Fatalf("Error checking or refreshing token: %v", err)
 	}
 
 	fmt.Println("Selected profile:", profile)

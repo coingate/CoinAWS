@@ -38,7 +38,7 @@ func ViewSecretVersions(cfg aws.Config, secretName, defaultEditor string) error 
 		Message: "Choose a version to view:",
 		Options: labels,
 	}
-	err = survey.AskOne(prompt, &selectedLabel)
+	err = survey.AskOne(prompt, &selectedLabel, survey.WithPageSize(14))
 	if err != nil {
 		return err
 	}

@@ -17,7 +17,7 @@ func SelectSecret(cfg aws.Config) (string, string, error) {
 		Message: "Choose an AWS secret:",
 		Options: secrets,
 	}
-	err = survey.AskOne(prompt, &selectedSecret)
+	err = survey.AskOne(prompt, &selectedSecret, survey.WithPageSize(14))
 	if err != nil {
 		return "", "", err
 	}
