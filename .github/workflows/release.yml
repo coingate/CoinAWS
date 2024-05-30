@@ -67,7 +67,6 @@ jobs:
         with:
           files: |
             release/smeditor-*
-            install.sh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
