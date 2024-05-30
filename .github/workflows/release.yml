@@ -29,8 +29,10 @@ jobs:
         run: |
           if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
             GOOS=linux GOARCH=amd64 go build -o smeditor
+            zip -r release/smeditor-linux-${{ matrix.go-version }}.zip smeditor
           else
             GOOS=darwin GOARCH=amd64 go build -o smeditor
+            zip -r release/smeditor-macos-${{ matrix.go-version }}.zip smeditor
           fi
 
       - name: Create release assets
@@ -42,6 +44,29 @@ jobs:
       - name: Upload release assets
         uses: actions/upload-artifact@v4
         with:
-          name: smeditor-${{ matrix.os }}-${{ matrix.go-version }}
+          name: smeditor-${{ matrix.os }}
           path: release/
+
+  publish:
+    runs-on: ubuntu-latest
+    needs: build
+#    if: github.ref_type == 'tag'
+    steps:
+      - name: Download release assets
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          path: release/
+
+
+      - name: Display structure of downloaded files
+        run: ls -ln release
+
+#      - name: Create GitHub Release
+#        uses: softprops/action-gh-release@v2
+#        with:
+#          files: release/smeditor-*
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 
