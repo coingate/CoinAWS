@@ -54,19 +54,12 @@ jobs:
         with:
           path: release/
 
-#      - name: Download release
-#        uses: actions/download-artifact@v4
-#        with:
-#          path: release/
-#          pattern: smeditor-*
-#          merge-multiple: true
-
       - name: Display structure of downloaded files
-        run: ls -R release
+        run: ls -ln release
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: release/*
+          files: release/smeditor-*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
