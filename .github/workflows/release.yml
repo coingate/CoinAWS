@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - 'v*.*.*'
+  workflow_dispatch:
+
 
 jobs:
   build:
@@ -51,6 +53,16 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: release/
+
+      - name: Download release
+        uses: actions/download-artifact@v4
+        with:
+          path: release/
+          pattern: smeditor-*
+          merge-multiple: true
+
+      - name: Display structure of downloaded files
+        run: ls -R release
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
