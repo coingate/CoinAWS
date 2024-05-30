@@ -26,8 +26,8 @@ tar -xzf smeditor.tar.gz -C smeditor --strip-components=1
 # Move the binary to /usr/local/bin
 sudo mv smeditor/smeditor /usr/local/bin/
 
-# Clean up
-rm -rf smeditor.tar.gz smeditor
+## Clean up
+#rm -rf smeditor.tar.gz smeditor
 
 # Verify installation
 if command -v smeditor > /dev/null; then
