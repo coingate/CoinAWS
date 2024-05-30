@@ -49,17 +49,17 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-#      - name: Download release assets
-#        uses: actions/download-artifact@v4
-#        with:
-#          path: release/
-
-      - name: Download release
+      - name: Download release assets
         uses: actions/download-artifact@v4
         with:
           path: release/
-          pattern: smeditor-*
-          merge-multiple: true
+
+#      - name: Download release
+#        uses: actions/download-artifact@v4
+#        with:
+#          path: release/
+#          pattern: smeditor-*
+#          merge-multiple: true
 
       - name: Display structure of downloaded files
         run: ls -R release
