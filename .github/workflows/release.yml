@@ -25,6 +25,11 @@ jobs:
         with:
           go-version: ${{ matrix.go-version }}
 
+      - name: Create release assets
+        id: create-release
+        run: |
+          mkdir -p release
+
       - name: Build the binary
         run: |
           if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
@@ -34,12 +39,6 @@ jobs:
             GOOS=darwin GOARCH=amd64 go build -o smeditor
             zip -r release/smeditor-macos-${{ matrix.go-version }}.zip smeditor
           fi
-
-      - name: Create release assets
-        id: create-release
-        run: |
-          mkdir -p release
-          mv smeditor release/
 
       - name: Upload release assets
         uses: actions/upload-artifact@v4
