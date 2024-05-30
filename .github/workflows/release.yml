@@ -17,8 +17,8 @@ jobs:
 
     strategy:
       matrix:
-        go-version: [ $GO_VERSIONS ]
-        os: [ $OS_LIST ]
+        go-version: [ ${{ env.GO_VERSIONS }} ]
+        os: [ ${{ env.OS_LIST }} ]
 
     steps:
       - name: Check out the repository
