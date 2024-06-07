@@ -1,7 +1,5 @@
 #!/bin/sh
 
-set -e
-
 # Determine the OS
 OS="$(uname -s)"
 case "$OS" in
