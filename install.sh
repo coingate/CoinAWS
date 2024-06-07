@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -e
+
 # Determine the OS
 OS="$(uname -s)"
 case "$OS" in
@@ -44,19 +46,19 @@ fi
 case "$DEFAULT_SHELL" in
     */bash)
         if [ -f "$HOME/.bashrc" ]; then
-            . "$HOME/.bashrc"
+            bash -c "source ~/.bashrc"
         elif [ -f "$HOME/.bash_profile" ]; then
-            . "$HOME/.bash_profile"
+            bash -c "source ~/.bash_profile"
         fi
         ;;
     */zsh)
         if [ -f "$HOME/.zshrc" ]; then
-            . "$HOME/.zshrc"
+            zsh -c "source ~/.zshrc"
         fi
         ;;
     */ksh)
         if [ -f "$HOME/.kshrc" ]; then
-            . "$HOME/.kshrc"
+            ksh -c "source ~/.kshrc"
         fi
         ;;
     */sh)
