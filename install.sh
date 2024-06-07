@@ -34,12 +34,42 @@ chmod 755 /usr/local/bin/smeditor
 # Clean up
 rm -rf smeditor.tar.gz smeditor
 
-# Refresh the shell environment
-if [ -n "$BASH_VERSION" ]; then
-    source ~/.bashrc
-elif [ -n "$ZSH_VERSION" ]; then
-    source ~/.zshrc
+# Determine the default shell for the current user
+DEFAULT_SHELL=$(getent passwd "$USER" | cut -d: -f7)
+
+# Fallback if getent is not available (common on macOS)
+if [ -z "$DEFAULT_SHELL" ]; then
+    DEFAULT_SHELL=$(dscl . -read /Users/"$USER" UserShell | awk '{print $2}')
 fi
+
+# Refresh the appropriate shell configuration file
+case "$DEFAULT_SHELL" in
+    */bash)
+        if [ -f "$HOME/.bashrc" ]; then
+            . "$HOME/.bashrc"
+        elif [ -f "$HOME/.bash_profile" ]; then
+            . "$HOME/.bash_profile"
+        fi
+        ;;
+    */zsh)
+        if [ -f "$HOME/.zshrc" ]; then
+            . "$HOME/.zshrc"
+        fi
+        ;;
+    */ksh)
+        if [ -f "$HOME/.kshrc" ]; then
+            . "$HOME/.kshrc"
+        fi
+        ;;
+    */sh)
+        if [ -f "$HOME/.profile" ]; then
+            . "$HOME/.profile"
+        fi
+        ;;
+    *)
+        echo "Unsupported shell: $DEFAULT_SHELL"
+        ;;
+esac
 
 # Verify installation
 if command -v smeditor > /dev/null; then
