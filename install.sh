@@ -29,7 +29,6 @@ tar -xzf smeditor.tar.gz
 mv smeditor /usr/local/bin/
 
 # Set the correct ownership and permissions
-chown root:root /usr/local/bin/smeditor
 chmod 755 /usr/local/bin/smeditor
 
 # Clean up
