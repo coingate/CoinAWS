@@ -15,6 +15,12 @@ func CheckAWSCLI() bool {
 	return err == nil
 }
 
+// CheckSsmPlugin checks if the Session Manager plugin is installed
+func CheckSsmPlugin() bool {
+	_, err := exec.LookPath("session-manager-plugin")
+	return err == nil
+}
+
 // DetectEditors detects available text editors from the known list
 func DetectEditors() []string {
 	var availableEditors []string

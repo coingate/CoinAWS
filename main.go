@@ -33,6 +33,10 @@ func main() {
 		log.Fatalf("AWS CLI is not installed. Please install it and try again.")
 	}
 
+	if !utils.CheckSsmPlugin() {
+		log.Fatalf("Session Manager plugin is not installed. Please install it and try again.")
+	}
+
 	profile, err := awsa.SelectProfile()
 	if err != nil {
 		log.Fatalf("Error selecting profile: %v", err)
