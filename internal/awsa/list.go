@@ -47,13 +47,3 @@ func ListEC2Instances(cfg aws.Config) ([]types.Instance, error) {
 
 	return instances, nil
 }
-
-// getInstanceName extracts the Name tag from an instance
-func getInstanceName(instance types.Instance) string {
-	for _, tag := range instance.Tags {
-		if *tag.Key == "Name" {
-			return *tag.Value
-		}
-	}
-	return "Unnamed"
-}
