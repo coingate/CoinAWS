@@ -7,28 +7,31 @@ import (
 
 // SelectSecret prompts the user to select an AWS secret and choose an action
 func SelectSecret(cfg aws.Config) (string, string, error) {
+	// List secrets using the provided AWS config
 	secrets, err := ListSecrets(cfg)
 	if err != nil {
 		return "", "", err
 	}
 
+	// Prompt user to select a secret
 	var selectedSecret string
 	prompt := &survey.Select{
-		Message: "Choose an AWS secret:",
-		Options: secrets,
+		Message:  "Choose an AWS secret:",
+		Options:  secrets,
+		PageSize: 14,
 	}
-	err = survey.AskOne(prompt, &selectedSecret, survey.WithPageSize(14))
-	if err != nil {
+	if err := survey.AskOne(prompt, &selectedSecret); err != nil {
 		return "", "", err
 	}
 
+	// Prompt user to select an action for the chosen secret
 	var action string
 	actionPrompt := &survey.Select{
-		Message: "Choose an action:",
-		Options: []string{"Edit latest secret version", "View previous versions"},
+		Message:  "Choose an action:",
+		Options:  []string{"Edit latest secret version", "View previous versions"},
+		PageSize: 14,
 	}
-	err = survey.AskOne(actionPrompt, &action)
-	if err != nil {
+	if err := survey.AskOne(actionPrompt, &action); err != nil {
 		return "", "", err
 	}
 

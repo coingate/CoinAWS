@@ -2,29 +2,36 @@ package awsa
 
 import (
 	"context"
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
-	"io/ioutil"
+	"fmt"
 	"os"
 	"os/exec"
+	"strings"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 )
 
 // EditSecret opens the secret in the preferred text editor and saves the changes
 func EditSecret(cfg aws.Config, secretName, defaultEditor string) (string, string, error) {
+	// Create a new Secrets Manager client
 	svc := secretsmanager.NewFromConfig(cfg)
 	input := &secretsmanager.GetSecretValueInput{
 		SecretId: &secretName,
 	}
 
+	// Retrieve the secret value
 	result, err := svc.GetSecretValue(context.TODO(), input)
 	if err != nil {
-		return "", "", err
+		if strings.Contains(err.Error(), "AccessDeniedException") {
+			return "", "", fmt.Errorf("access denied: you do not have permission to access the secret '%s'", secretName)
+		}
+		return "", "", fmt.Errorf("error fetching the secret: %w", err)
 	}
 
 	originalSecret := *result.SecretString
 
 	// Write the secret value to a temporary file
-	tmpfile, err := ioutil.TempFile("", "secret-*.txt")
+	tmpfile, err := os.CreateTemp("", "secret-*.txt")
 	if err != nil {
 		return "", "", err
 	}
@@ -53,7 +60,7 @@ func EditSecret(cfg aws.Config, secretName, defaultEditor string) (string, strin
 	}
 
 	// Read the modified secret back from the file
-	editedSecretBytes, err := ioutil.ReadFile(tmpfile.Name())
+	editedSecretBytes, err := os.ReadFile(tmpfile.Name())
 	if err != nil {
 		return "", "", err
 	}

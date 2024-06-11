@@ -8,131 +8,202 @@ import (
 	"smeditor/config"
 	"smeditor/internal/awsa"
 	"smeditor/utils"
+	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	aws_config "github.com/aws/aws-sdk-go-v2/config"
 )
 
 func main() {
-	// Define the 'config' flag
 	configFlag := flag.Bool("config", false, "Set the default editor")
 	flag.Parse()
 
-	// Load the configuration
 	cfg, err := config.LoadConfig()
 	if err != nil {
-		fmt.Println("Error loading config:", err)
-		os.Exit(1)
+		log.Fatalf("Error loading config: %v", err)
 	}
 
-	// Handle the 'config' flag
 	if *configFlag {
-		availableEditors := utils.DetectEditors()
-		if len(availableEditors) == 0 {
-			fmt.Println("No known editors found on your system.")
-			os.Exit(1)
-		}
-
-		var selectedEditor string
-		prompt := &survey.Select{
-			Message: "Choose your default text editor:",
-			Options: availableEditors,
-		}
-		err := survey.AskOne(prompt, &selectedEditor, survey.WithPageSize(10))
-		if err != nil {
-			fmt.Println("Error selecting editor:", err)
-			os.Exit(1)
-		}
-
-		cfg.DefaultEditor = selectedEditor
-		err = config.SaveConfig(cfg)
-		if err != nil {
-			fmt.Println("Error saving config:", err)
-			os.Exit(1)
-		}
-		fmt.Printf("Default editor set to '%s'\n", cfg.DefaultEditor)
-		os.Exit(0)
+		setDefaultEditor(cfg)
+		return
 	}
 
-	// Check if AWS CLI is installed
 	if !utils.CheckAWSCLI() {
-		fmt.Println("AWS CLI is not installed. Please install it and try again.")
-		os.Exit(1)
+		log.Fatalf("AWS CLI is not installed. Please install it and try again.")
 	}
 
-	// Select AWS profile
 	profile, err := awsa.SelectProfile()
 	if err != nil {
-		fmt.Println("Error selecting profile:", err)
-		os.Exit(1)
+		log.Fatalf("Error selecting profile: %v", err)
 	}
 
-	// Check and refresh AWS SSO token if necessary
 	err = awsa.CheckAndRefreshToken(profile)
 	if err != nil {
 		log.Fatalf("Error checking or refreshing token: %v", err)
 	}
 
-	fmt.Println("Selected profile:", profile)
-
-	// Get AWS config with the selected profile
-	cfgAWS, err := awsa.GetConfigWithProfile(profile)
+	cfgAWS, sharedConfig, err := awsa.GetConfigWithProfile(profile)
 	if err != nil {
-		fmt.Println("Error loading AWS config:", err)
-		os.Exit(1)
+		log.Fatalf("Error loading AWS config: %v", err)
 	}
 
+	mainMenu(cfgAWS, &cfg, sharedConfig)
+}
+
+func setDefaultEditor(cfg config.Config) {
+	availableEditors := utils.DetectEditors()
+	if len(availableEditors) == 0 {
+		log.Fatalf("No known editors found on your system.")
+	}
+
+	var selectedEditor string
+	prompt := &survey.Select{
+		Message:  "Choose your default text editor:",
+		Options:  availableEditors,
+		PageSize: 10,
+	}
+	err := survey.AskOne(prompt, &selectedEditor)
+	if err != nil {
+		log.Fatalf("Error selecting editor: %v", err)
+	}
+
+	cfg.DefaultEditor = selectedEditor
+	err = config.SaveConfig(cfg)
+	if err != nil {
+		log.Fatalf("Error saving config: %v", err)
+	}
+	fmt.Printf("Default editor set to '%s'\n", cfg.DefaultEditor)
+}
+
+func mainMenu(cfg aws.Config, appConfig *config.Config, sharedConfig aws_config.SharedConfig) {
 	for {
-		// Select AWS secret and action
-		secretName, action, err := awsa.SelectSecret(cfgAWS)
+		var option string
+		prompt := &survey.Select{
+			Message: "Main Menu",
+			Options: []string{"EC2", "SecretsManager", "Exit"},
+		}
+		err := survey.AskOne(prompt, &option)
 		if err != nil {
-			fmt.Println("Error selecting secret:", err)
-			os.Exit(1)
+			log.Fatalf("Error selecting option: %v", err)
 		}
 
-		fmt.Println("Selected secret:", secretName)
-		fmt.Println("Selected action:", action)
-
-		if action == "Edit latest secret version" {
-			// Edit AWS secret
-			originalSecret, editedSecret, err := awsa.EditSecret(cfgAWS, secretName, cfg.DefaultEditor)
-			if err != nil {
-				fmt.Println("Error editing secret:", err)
-				os.Exit(1)
-			}
-
-			// Compare original and edited secret values
-			if originalSecret == editedSecret {
-				fmt.Println("No changes made to the secret.")
-				continue
-			}
-
-			// Prompt for version label
-			fmt.Println("Enter version label (leave empty to use timestamp):")
-			var versionLabel string
-			fmt.Scanln(&versionLabel)
-
-			if versionLabel == "" {
-				versionLabel = awsa.GenerateVersionLabel()
-			}
-
-			// Update AWS secret with additional label "AWSCURRENT"
-			versionStages := []string{versionLabel, "AWSCURRENT"}
-
-			// Update AWS secret
-			err = awsa.UpdateSecret(cfgAWS, secretName, editedSecret, versionStages)
-			if err != nil {
-				fmt.Println("Error updating secret:", err)
-				os.Exit(1)
-			}
-
-			fmt.Println("Secret updated successfully with version labels:", versionStages)
-		} else if action == "View previous versions" {
-			// View AWS secret versions
-			err := awsa.ViewSecretVersions(cfgAWS, secretName, cfg.DefaultEditor)
-			if err != nil {
-				fmt.Println("Error viewing secret versions:", err)
-				os.Exit(1)
-			}
+		switch option {
+		case "EC2":
+			handleEC2(cfg, sharedConfig)
+		case "SecretsManager":
+			handleSecretsManager(cfg, appConfig)
+		case "Exit":
+			fmt.Println("Exiting.")
+			os.Exit(0)
 		}
 	}
+}
+
+func handleEC2(cfg aws.Config, sharedConfig aws_config.SharedConfig) {
+	instances, err := awsa.ListEC2Instances(cfg)
+	if err != nil {
+		log.Fatalf("Error listing EC2 instances: %v", err)
+	}
+	if len(instances) == 0 {
+		fmt.Println("No EC2 instances found.")
+		return
+	}
+
+	var maxNameLen int
+	instanceMap := make(map[string]string)
+	for _, instance := range instances {
+		var name string
+		for _, tag := range instance.Tags {
+			if *tag.Key == "Name" {
+				name = *tag.Value
+				break
+			}
+		}
+		if len(name) > maxNameLen {
+			maxNameLen = len(name)
+		}
+		instanceMap[name] = *instance.InstanceId
+	}
+
+	var instanceOptions []string
+	for name, instanceID := range instanceMap {
+		instanceOption := fmt.Sprintf("%-*s %s", maxNameLen, name, instanceID)
+		instanceOptions = append(instanceOptions, instanceOption)
+	}
+
+	var selectedInstanceOption string
+	prompt := &survey.Select{
+		Message:  "Select an EC2 instance to connect to:",
+		Options:  instanceOptions,
+		PageSize: 14,
+	}
+	err = survey.AskOne(prompt, &selectedInstanceOption)
+	if err != nil {
+		log.Fatalf("Error selecting instance: %v", err)
+	}
+
+	selectedInstanceID := strings.TrimSpace(selectedInstanceOption[maxNameLen:])
+	err = awsa.ConnectToEC2Instance(sharedConfig, selectedInstanceID)
+	if err != nil {
+		log.Println(err)
+		fmt.Println("Returning to the main menu...")
+		return
+	}
+}
+
+func handleSecretsManager(cfg aws.Config, appConfig *config.Config) {
+	secretName, action, err := awsa.SelectSecret(cfg)
+	if err != nil {
+		log.Fatalf("Error selecting secret: %v", err)
+	}
+
+	fmt.Println("Selected secret:", secretName)
+	fmt.Println("Selected action:", action)
+
+	switch action {
+	case "Edit latest secret version":
+		editSecret(cfg, appConfig, secretName)
+	case "View previous versions":
+		err := awsa.ViewSecretVersions(cfg, secretName, appConfig.DefaultEditor)
+		if err != nil {
+			log.Println(err)
+			fmt.Println("Returning to the main menu...")
+			return
+		}
+	}
+}
+
+func editSecret(cfg aws.Config, appConfig *config.Config, secretName string) {
+	originalSecret, editedSecret, err := awsa.EditSecret(cfg, secretName, appConfig.DefaultEditor)
+	if err != nil {
+		log.Println(err)
+		fmt.Println("Returning to the main menu...")
+		return
+	}
+
+	if originalSecret == editedSecret {
+		fmt.Println("No changes made to the secret.")
+		return
+	}
+
+	fmt.Println("Enter version label (leave empty to use timestamp):")
+	var versionLabel string
+	_, err = fmt.Scanln(&versionLabel)
+	if err != nil {
+		log.Fatalf("Error reading version label: %v", err)
+	}
+
+	if versionLabel == "" {
+		versionLabel = awsa.GenerateVersionLabel()
+	}
+
+	versionStages := []string{versionLabel, "AWSCURRENT"}
+
+	err = awsa.UpdateSecret(cfg, secretName, editedSecret, versionStages)
+	if err != nil {
+		log.Fatalf("Error updating secret: %v", err)
+	}
+
+	fmt.Println("Secret updated successfully with version labels:", versionStages)
 }

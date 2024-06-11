@@ -4,9 +4,12 @@ import (
 	"os/exec"
 )
 
-var knownEditors = []string{"vim", "nano", "vi", "emacs", "gedit", "kate", "subl", "code"}
+// List of known text editors
+var knownEditors = []string{
+	"vim", "nano", "vi", "emacs", "gedit", "kate", "subl", "code",
+}
 
-// Check if AWS CLI is installed
+// CheckAWSCLI checks if the AWS CLI is installed
 func CheckAWSCLI() bool {
 	_, err := exec.LookPath("aws")
 	return err == nil
@@ -14,7 +17,7 @@ func CheckAWSCLI() bool {
 
 // DetectEditors detects available text editors from the known list
 func DetectEditors() []string {
-	availableEditors := []string{}
+	var availableEditors []string
 	for _, editor := range knownEditors {
 		if _, err := exec.LookPath(editor); err == nil {
 			availableEditors = append(availableEditors, editor)

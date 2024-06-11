@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 )
 
+// CheckAndRefreshToken checks the AWS SSO token for the given profile and refreshes it if expired
 func CheckAndRefreshToken(profile string) error {
 	ctx := context.TODO()
 
@@ -19,7 +20,7 @@ func CheckAndRefreshToken(profile string) error {
 		return fmt.Errorf("unable to load SDK config: %w", err)
 	}
 
-	// Create a STS client
+	// Create an STS client
 	client := sts.NewFromConfig(cfg)
 
 	// Try to get the caller identity to check if the token is valid
@@ -36,8 +37,7 @@ func CheckAndRefreshToken(profile string) error {
 	cmd := exec.Command("aws", "sso", "login", "--profile", profile)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	err = cmd.Run()
-	if err != nil {
+	if err = cmd.Run(); err != nil {
 		return fmt.Errorf("failed to execute aws sso login: %w", err)
 	}
 

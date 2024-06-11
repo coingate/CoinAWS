@@ -2,13 +2,15 @@ package awsa
 
 import (
 	"context"
+	"time"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
-	"time"
 )
 
 // UpdateSecret updates the secret in AWS Secrets Manager
 func UpdateSecret(cfg aws.Config, secretName, secretValue string, versionStages []string) error {
+	// Create a new Secrets Manager client
 	svc := secretsmanager.NewFromConfig(cfg)
 	input := &secretsmanager.PutSecretValueInput{
 		SecretId:      &secretName,
@@ -16,8 +18,13 @@ func UpdateSecret(cfg aws.Config, secretName, secretValue string, versionStages 
 		VersionStages: versionStages,
 	}
 
+	// Update the secret value
 	_, err := svc.PutSecretValue(context.TODO(), input)
-	return err
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // GenerateVersionLabel generates a version label with the current timestamp

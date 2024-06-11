@@ -2,11 +2,12 @@ package config
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"errors"
 	"os"
 	"path/filepath"
 )
 
+// Config represents the configuration structure
 type Config struct {
 	DefaultEditor string `json:"default_editor"`
 }
@@ -17,25 +18,37 @@ var configFile = filepath.Join(os.Getenv("HOME"), ".smeditor_config.json")
 func LoadConfig() (Config, error) {
 	var cfg Config
 
-	if _, err := os.Stat(configFile); os.IsNotExist(err) {
+	// Check if the config file exists
+	if _, err := os.Stat(configFile); errors.Is(err, os.ErrNotExist) {
 		return cfg, nil // Return an empty config if the file does not exist
 	}
 
-	data, err := ioutil.ReadFile(configFile)
+	// Read the config file
+	data, err := os.ReadFile(configFile)
 	if err != nil {
 		return cfg, err
 	}
 
-	err = json.Unmarshal(data, &cfg)
-	return cfg, err
+	// Unmarshal the JSON data
+	if err := json.Unmarshal(data, &cfg); err != nil {
+		return cfg, err
+	}
+
+	return cfg, nil
 }
 
 // SaveConfig saves the configuration to the config file
 func SaveConfig(cfg Config) error {
+	// Marshal the config struct to JSON
 	data, err := json.MarshalIndent(cfg, "", "  ")
 	if err != nil {
 		return err
 	}
 
-	return ioutil.WriteFile(configFile, data, 0644)
+	// Write the JSON data to the config file
+	if err := os.WriteFile(configFile, data, 0644); err != nil {
+		return err
+	}
+
+	return nil
 }

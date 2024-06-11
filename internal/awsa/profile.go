@@ -1,45 +1,33 @@
 package awsa
 
 import (
-	"bufio"
+	"bytes"
 	"context"
+	"fmt"
+	"os/exec"
+	"strings"
+
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
-	"os"
-	"path/filepath"
-	"strings"
 )
 
-// GetProfiles retrieves the list of profiles from the AWS config file
+// Profile represents the structure of an AWS CLI profile
+type Profile struct {
+	Name string `json:"Name"`
+}
+
+// GetProfiles retrieves the list of profiles using AWS CLI
 func GetProfiles() ([]string, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return nil, err
+	cmd := exec.Command("aws", "configure", "list-profiles")
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("failed to list profiles: %w", err)
 	}
 
-	configPath := filepath.Join(home, ".aws", "config")
-	file, err := os.Open(configPath)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	var profiles []string
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.HasPrefix(line, "[profile ") && strings.HasSuffix(line, "]") {
-			profile := strings.TrimPrefix(line, "[profile ")
-			profile = strings.TrimSuffix(profile, "]")
-			profiles = append(profiles, profile)
-		}
-		// Handle default profile case
-		if line == "[default]" {
-			profiles = append(profiles, "default")
-		}
-	}
-	return profiles, scanner.Err()
+	profiles := strings.Split(strings.TrimSpace(out.String()), "\n")
+	return profiles, nil
 }
 
 // SelectProfile prompts the user to select an AWS profile
@@ -62,7 +50,17 @@ func SelectProfile() (string, error) {
 	return selectedProfile, nil
 }
 
-// GetConfigWithProfile loads AWS config with the selected profile
-func GetConfigWithProfile(profile string) (aws.Config, error) {
-	return config.LoadDefaultConfig(context.TODO(), config.WithSharedConfigProfile(profile))
+// GetConfigWithProfile loads AWS config with the selected profile and returns both default and shared configs
+func GetConfigWithProfile(profile string) (aws.Config, config.SharedConfig, error) {
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithSharedConfigProfile(profile))
+	if err != nil {
+		return aws.Config{}, config.SharedConfig{}, err
+	}
+
+	sharedCfg, err := config.LoadSharedConfigProfile(context.TODO(), profile)
+	if err != nil {
+		return aws.Config{}, config.SharedConfig{}, err
+	}
+
+	return cfg, sharedCfg, nil
 }
