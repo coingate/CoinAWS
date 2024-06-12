@@ -11,7 +11,7 @@ case "$OS" in
 esac
 
 # Determine the latest version tag from GitHub and find the corresponding asset URL
-ASSET_URL=$(curl -s https://api.github.com/repos/coingate/smeditor/releases/latest | grep "browser_download_url.*${OS}.*tar.gz" | cut -d '"' -f 4)
+ASSET_URL=$(curl -s https://api.github.com/repos/coingate/CoinAWS/releases/latest | grep "browser_download_url.*${OS}.*tar.gz" | cut -d '"' -f 4)
 
 # Check if the ASSET_URL was found
 if [ -z "$ASSET_URL" ]; then
@@ -20,19 +20,19 @@ if [ -z "$ASSET_URL" ]; then
 fi
 
 # Download the appropriate tar.gz file
-curl -L -o smeditor.tar.gz "$ASSET_URL"
+curl -L -o coinaws.tar.gz "$ASSET_URL"
 
 # Extract the downloaded file
-tar -xzf smeditor.tar.gz
+tar -xzf coinaws.tar.gz
 
 # Move the binary to /usr/local/bin
-mv smeditor /usr/local/bin/
+mv coinaws /usr/local/bin/
 
 # Set the correct ownership and permissions
-chmod 755 /usr/local/bin/smeditor
+chmod 755 /usr/local/bin/coinaws
 
 # Clean up
-rm -rf smeditor.tar.gz smeditor
+rm -rf coinaws.tar.gz coinaws
 
 # Determine the default shell for the current user
 DEFAULT_SHELL=$(getent passwd "$USER" | cut -d: -f7)
@@ -72,8 +72,8 @@ case "$DEFAULT_SHELL" in
 esac
 
 # Verify installation
-if command -v smeditor > /dev/null; then
-    echo "smeditor installed successfully!"
+if command -v coinaws > /dev/null; then
+    echo "coinaws installed successfully!"
 else
     echo "Installation failed."
 fi

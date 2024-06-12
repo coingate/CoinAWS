@@ -6,7 +6,6 @@ on:
       - 'v*.*.*'
   workflow_dispatch:
 
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -33,17 +32,17 @@ jobs:
       - name: Build the binary
         run: |
           if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
-            GOOS=linux GOARCH=amd64 go build -o smeditor
-            tar -czvf release/smeditor-linux-${{ matrix.go-version }}.tar.gz smeditor
+            GOOS=linux GOARCH=amd64 go build -o coinaws
+            tar -czvf release/coinaws-linux-${{ matrix.go-version }}.tar.gz coinaws
           else
-            GOOS=darwin GOARCH=amd64 go build -o smeditor
-            tar -czvf release/smeditor-macos-${{ matrix.go-version }}.tar.gz smeditor
+            GOOS=darwin GOARCH=amd64 go build -o coinaws
+            tar -czvf release/coinaws-macos-${{ matrix.go-version }}.tar.gz coinaws
           fi
 
       - name: Upload release assets
         uses: actions/upload-artifact@v4
         with:
-          name: smeditor-${{ matrix.os }}
+          name: coinaws-${{ matrix.os }}
           path: release/
 
   publish:
@@ -66,8 +65,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            release/smeditor-*
+            release/coinaws-*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-
