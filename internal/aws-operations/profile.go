@@ -1,4 +1,4 @@
-package awsa
+package aws_operations
 
 import (
 	"bytes"

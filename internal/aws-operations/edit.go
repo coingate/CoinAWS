@@ -1,8 +1,9 @@
-package awsa
+package aws_operations
 
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -35,7 +36,11 @@ func EditSecret(cfg aws.Config, secretName, defaultEditor string) (string, strin
 	if err != nil {
 		return "", "", err
 	}
-	defer os.Remove(tmpfile.Name()) // Clean up the file afterwards
+	defer func() {
+		if err := os.Remove(tmpfile.Name()); err != nil {
+			log.Printf("Warning: failed to remove temporary file: %v", err)
+		}
+	}()
 
 	if _, err := tmpfile.WriteString(originalSecret); err != nil {
 		return "", "", err

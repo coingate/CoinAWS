@@ -5,21 +5,20 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"smeditor/config"
-	"smeditor/internal/awsa"
+	"smeditor/internal/aws-operations"
 	"smeditor/utils"
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	aws_config "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/config"
 )
 
 func main() {
 	configFlag := flag.Bool("config", false, "Set the default editor")
 	flag.Parse()
 
-	cfg, err := config.LoadConfig()
+	cfg, err := utils.LoadConfig()
 	if err != nil {
 		log.Fatalf("Error loading config: %v", err)
 	}
@@ -37,17 +36,17 @@ func main() {
 		log.Fatalf("Session Manager plugin is not installed. Please install it and try again.")
 	}
 
-	profile, err := awsa.SelectProfile()
+	profile, err := aws_operations.SelectProfile()
 	if err != nil {
 		log.Fatalf("Error selecting profile: %v", err)
 	}
 
-	err = awsa.CheckAndRefreshToken(profile)
+	err = aws_operations.CheckAndRefreshToken(profile)
 	if err != nil {
 		log.Fatalf("Error checking or refreshing token: %v", err)
 	}
 
-	cfgAWS, sharedConfig, err := awsa.GetConfigWithProfile(profile)
+	cfgAWS, sharedConfig, err := aws_operations.GetConfigWithProfile(profile)
 	if err != nil {
 		log.Fatalf("Error loading AWS config: %v", err)
 	}
@@ -55,7 +54,7 @@ func main() {
 	mainMenu(cfgAWS, &cfg, sharedConfig)
 }
 
-func setDefaultEditor(cfg config.Config) {
+func setDefaultEditor(cfg utils.Config) {
 	availableEditors := utils.DetectEditors()
 	if len(availableEditors) == 0 {
 		log.Fatalf("No known editors found on your system.")
@@ -73,14 +72,14 @@ func setDefaultEditor(cfg config.Config) {
 	}
 
 	cfg.DefaultEditor = selectedEditor
-	err = config.SaveConfig(cfg)
+	err = utils.SaveConfig(cfg)
 	if err != nil {
 		log.Fatalf("Error saving config: %v", err)
 	}
 	fmt.Printf("Default editor set to '%s'\n", cfg.DefaultEditor)
 }
 
-func mainMenu(cfg aws.Config, appConfig *config.Config, sharedConfig aws_config.SharedConfig) {
+func mainMenu(cfg aws.Config, appConfig *utils.Config, sharedConfig config.SharedConfig) {
 	for {
 		var option string
 		prompt := &survey.Select{
@@ -104,8 +103,8 @@ func mainMenu(cfg aws.Config, appConfig *config.Config, sharedConfig aws_config.
 	}
 }
 
-func handleEC2(cfg aws.Config, sharedConfig aws_config.SharedConfig) {
-	instances, err := awsa.ListEC2Instances(cfg)
+func handleEC2(cfg aws.Config, sharedConfig config.SharedConfig) {
+	instances, err := aws_operations.ListEC2Instances(cfg)
 	if err != nil {
 		log.Fatalf("Error listing EC2 instances: %v", err)
 	}
@@ -148,7 +147,7 @@ func handleEC2(cfg aws.Config, sharedConfig aws_config.SharedConfig) {
 	}
 
 	selectedInstanceID := strings.TrimSpace(selectedInstanceOption[maxNameLen:])
-	err = awsa.ConnectToEC2Instance(sharedConfig, selectedInstanceID)
+	err = aws_operations.ConnectToEC2Instance(sharedConfig, selectedInstanceID)
 	if err != nil {
 		log.Println(err)
 		fmt.Println("Returning to the main menu...")
@@ -156,8 +155,8 @@ func handleEC2(cfg aws.Config, sharedConfig aws_config.SharedConfig) {
 	}
 }
 
-func handleSecretsManager(cfg aws.Config, appConfig *config.Config) {
-	secretName, action, err := awsa.SelectSecret(cfg)
+func handleSecretsManager(cfg aws.Config, appConfig *utils.Config) {
+	secretName, action, err := aws_operations.SelectSecret(cfg)
 	if err != nil {
 		log.Fatalf("Error selecting secret: %v", err)
 	}
@@ -169,7 +168,7 @@ func handleSecretsManager(cfg aws.Config, appConfig *config.Config) {
 	case "Edit latest secret version":
 		editSecret(cfg, appConfig, secretName)
 	case "View previous versions":
-		err := awsa.ViewSecretVersions(cfg, secretName, appConfig.DefaultEditor)
+		err := aws_operations.ViewSecretVersions(cfg, secretName, appConfig.DefaultEditor)
 		if err != nil {
 			log.Println(err)
 			fmt.Println("Returning to the main menu...")
@@ -178,8 +177,8 @@ func handleSecretsManager(cfg aws.Config, appConfig *config.Config) {
 	}
 }
 
-func editSecret(cfg aws.Config, appConfig *config.Config, secretName string) {
-	originalSecret, editedSecret, err := awsa.EditSecret(cfg, secretName, appConfig.DefaultEditor)
+func editSecret(cfg aws.Config, appConfig *utils.Config, secretName string) {
+	originalSecret, editedSecret, err := aws_operations.EditSecret(cfg, secretName, appConfig.DefaultEditor)
 	if err != nil {
 		log.Println(err)
 		fmt.Println("Returning to the main menu...")
@@ -199,12 +198,12 @@ func editSecret(cfg aws.Config, appConfig *config.Config, secretName string) {
 	}
 
 	if versionLabel == "" {
-		versionLabel = awsa.GenerateVersionLabel()
+		versionLabel = aws_operations.GenerateVersionLabel()
 	}
 
 	versionStages := []string{versionLabel, "AWSCURRENT"}
 
-	err = awsa.UpdateSecret(cfg, secretName, editedSecret, versionStages)
+	err = aws_operations.UpdateSecret(cfg, secretName, editedSecret, versionStages)
 	if err != nil {
 		log.Fatalf("Error updating secret: %v", err)
 	}

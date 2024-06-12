@@ -1,8 +1,9 @@
-package awsa
+package aws_operations
 
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -70,7 +71,12 @@ func ViewSecretVersions(cfg aws.Config, secretName, defaultEditor string) error 
 	if err != nil {
 		return fmt.Errorf("error creating temp file: %w", err)
 	}
-	defer os.Remove(tmpfile.Name()) // Clean up the file afterwards
+
+	defer func() {
+		if err := os.Remove(tmpfile.Name()); err != nil {
+			log.Printf("Warning: failed to remove temporary file: %v", err)
+		}
+	}()
 
 	if _, err := tmpfile.WriteString(secretValue); err != nil {
 		return fmt.Errorf("error writing to temp file: %w", err)
