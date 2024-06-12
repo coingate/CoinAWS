@@ -34,36 +34,36 @@ chmod 755 /usr/local/bin/coinaws
 # Clean up
 rm -rf coinaws.tar.gz coinaws
 
-# Determine the default shell for the current user
-DEFAULT_SHELL=$(getent passwd "$USER" | cut -d: -f7)
+# Determine the default shell for the original user (not root)
+DEFAULT_SHELL=$(getent passwd "$SUDO_USER" | cut -d: -f7)
 
 # Fallback if getent is not available (common on macOS)
 if [ -z "$DEFAULT_SHELL" ]; then
-    DEFAULT_SHELL=$(dscl . -read /Users/"$USER" UserShell | awk '{print $2}')
+    DEFAULT_SHELL=$(dscl . -read /Users/"$SUDO_USER" UserShell | awk '{print $2}')
 fi
 
-# Refresh the appropriate shell configuration file
+# Refresh the appropriate shell configuration file for the original user
 case "$DEFAULT_SHELL" in
     */bash)
-        if [ -f "$HOME/.bashrc" ]; then
-            bash -c "source ~/.bashrc"
-        elif [ -f "$HOME/.bash_profile" ]; then
-            bash -c "source ~/.bash_profile"
+        if [ -f "/home/$SUDO_USER/.bashrc" ]; then
+            sudo -u "$SUDO_USER" bash -c "source /home/$SUDO_USER/.bashrc"
+        elif [ -f "/home/$SUDO_USER/.bash_profile" ]; then
+            sudo -u "$SUDO_USER" bash -c "source /home/$SUDO_USER/.bash_profile"
         fi
         ;;
     */zsh)
-        if [ -f "$HOME/.zshrc" ]; then
-            zsh -c "source ~/.zshrc"
+        if [ -f "/home/$SUDO_USER/.zshrc" ]; then
+            sudo -u "$SUDO_USER" zsh -c "source /home/$SUDO_USER/.zshrc"
         fi
         ;;
     */ksh)
-        if [ -f "$HOME/.kshrc" ]; then
-            ksh -c "source ~/.kshrc"
+        if [ -f "/home/$SUDO_USER/.kshrc" ]; then
+            sudo -u "$SUDO_USER" ksh -c "source /home/$SUDO_USER/.kshrc"
         fi
         ;;
     */sh)
-        if [ -f "$HOME/.profile" ]; then
-            . "$HOME/.profile"
+        if [ -f "/home/$SUDO_USER/.profile" ]; then
+            sudo -u "$SUDO_USER" sh -c ". /home/$SUDO_USER/.profile"
         fi
         ;;
     *)
