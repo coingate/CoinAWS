@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"log"
@@ -191,11 +192,14 @@ func editSecret(cfg aws.Config, appConfig *utils.Config, secretName string) {
 	}
 
 	fmt.Println("Enter version label (leave empty to use timestamp):")
-	var versionLabel string
-	_, err = fmt.Scanln(&versionLabel)
+	reader := bufio.NewReader(os.Stdin)
+	versionLabel, err := reader.ReadString('\n')
 	if err != nil {
 		log.Fatalf("Error reading version label: %v", err)
 	}
+
+	// Trim the newline character from the input
+	versionLabel = strings.TrimSpace(versionLabel)
 
 	if versionLabel == "" {
 		versionLabel = aws_operations.GenerateVersionLabel()
