@@ -24,6 +24,10 @@ jobs:
         with:
           go-version: ${{ matrix.go-version }}
 
+      - name: Get the current Git tag
+        id: get_tag
+        run: echo "TAG_NAME=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+
       - name: Create release assets
         id: create-release
         run: |
@@ -32,10 +36,10 @@ jobs:
       - name: Build the binary
         run: |
           if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
-            GOOS=linux GOARCH=amd64 go build -o coinaws
+            GOOS=linux GOARCH=amd64 go build -ldflags="-X main.version=${{ env.TAG_NAME }}" -o coinaws
             tar -czvf release/coinaws-linux-${{ matrix.go-version }}.tar.gz coinaws
           else
-            GOOS=darwin GOARCH=amd64 go build -o coinaws
+            GOOS=darwin GOARCH=amd64 go build -ldflags="-X main.version=${{ env.TAG_NAME }}" -o coinaws
             tar -czvf release/coinaws-macos-${{ matrix.go-version }}.tar.gz coinaws
           fi
 

@@ -4,18 +4,21 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"github.com/AlecAivazis/survey/v2"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
 	"log"
 	"os"
 	"smeditor/internal/aws-operations"
 	"smeditor/utils"
 	"strings"
-
-	"github.com/AlecAivazis/survey/v2"
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
 )
 
+// Version will be set dynamically using Git tag during the build process
+var version = "v1" // Default value, will be replaced by the CI
+
 func main() {
+	utils.CheckForUpdates(version)
 	configFlag := flag.Bool("config", false, "Set the default editor")
 	flag.Parse()
 
