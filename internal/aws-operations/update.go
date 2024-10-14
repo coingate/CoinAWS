@@ -19,14 +19,14 @@ func UpdateSecret(cfg aws.Config, secretName, secretValue string, versionStages 
 		VersionStages: versionStages,
 	}
 
-	// Update the secret value
-	_, err := svc.PutSecretValue(context.TODO(), input)
+	// Prune old versions before adding the new secret value
+	err := pruneOldVersions(cfg, secretName)
 	if err != nil {
 		return err
 	}
 
-	// Ensure we only keep 15 versions
-	err = pruneOldVersions(cfg, secretName)
+	// Update the secret value
+	_, err = svc.PutSecretValue(context.TODO(), input)
 	if err != nil {
 		return err
 	}
@@ -39,7 +39,7 @@ func GenerateVersionLabel() string {
 	return time.Now().Format("20060102T150405")
 }
 
-// pruneOldVersions removes labels from the oldest secret versions, keeping only the latest 15
+// pruneOldVersions removes labels from the oldest secret versions, keeping only the latest 12
 func pruneOldVersions(cfg aws.Config, secretName string) error {
 	svc := secretsmanager.NewFromConfig(cfg)
 	maxResults := int32(20)
@@ -60,8 +60,8 @@ func pruneOldVersions(cfg aws.Config, secretName string) error {
 		return result.Versions[i].CreatedDate.Before(*result.Versions[j].CreatedDate)
 	})
 
-	// If there are more than 15 versions, remove labels from the oldest ones
-	if len(result.Versions) > 15 {
+	// If there are more than 12 versions, remove labels from the oldest ones
+	if len(result.Versions) > 12 {
 		for _, version := range result.Versions[:len(result.Versions)-15] {
 			for _, versionStage := range version.VersionStages {
 				_, err := svc.UpdateSecretVersionStage(context.TODO(), &secretsmanager.UpdateSecretVersionStageInput{
