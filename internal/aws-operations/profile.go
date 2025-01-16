@@ -42,6 +42,7 @@ func SelectProfile() (string, error) {
 		Message: "Choose an AWS profile:",
 		Options: profiles,
 	}
+
 	err = survey.AskOne(prompt, &selectedProfile, survey.WithPageSize(14))
 	if err != nil {
 		return "", err

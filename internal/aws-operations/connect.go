@@ -5,13 +5,19 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 )
 
 // ConnectToEC2Instance connects to an EC2 instance using AWS SSM
 func ConnectToEC2Instance(cfg config.SharedConfig, instanceID string) error {
+	ssmSigChan := make(chan os.Signal, 1)
+	signal.Notify(ssmSigChan, syscall.SIGINT)
+	defer signal.Stop(ssmSigChan)
+
 	profile := cfg.Profile
 
 	// Form the command to start an SSM session
